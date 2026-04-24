@@ -1,0 +1,48 @@
+package com.livraison.supervision.service;
+
+import com.livraison.supervision.dto.LoginRequest;
+import com.livraison.supervision.dto.LoginResponse;
+import com.livraison.supervision.entity.Utilisateur;
+import com.livraison.supervision.repository.UtilisateurRepository;
+import com.livraison.supervision.security.JwtUtil;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+
+    private final UtilisateurRepository utilisateurRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
+
+    public LoginResponse login(LoginRequest request) {
+        Utilisateur utilisateur = utilisateurRepository
+                .findByIdentifiant(request.identifiant)
+                .orElseThrow(() -> new RuntimeException("Identifiant ou mot de passe incorrect"));
+
+        if (!utilisateur.getActif()) {
+            throw new RuntimeException("Compte désactivé");
+        }
+
+        if (!passwordEncoder.matches(request.motDePasse, utilisateur.getMotDePasse())) {
+            throw new RuntimeException("Identifiant ou mot de passe incorrect");
+        }
+
+        String token = jwtUtil.generateToken(
+                utilisateur.getIdentifiant(),
+                utilisateur.getRole().name(),
+                utilisateur.getId()
+        );
+
+        return new LoginResponse(
+                token,
+                utilisateur.getId(),
+                utilisateur.getNom(),
+                utilisateur.getPrenom(),
+                utilisateur.getIdentifiant(),
+                utilisateur.getRole()
+        );
+    }
+}
