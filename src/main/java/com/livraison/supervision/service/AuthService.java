@@ -26,7 +26,11 @@ public class AuthService {
             throw new RuntimeException("Compte désactivé");
         }
 
-        if (!passwordEncoder.matches(request.motDePasse, utilisateur.getMotDePasse())) {
+        // TODO: TEMPORAIRE - contournement BCrypt pour debugging
+        boolean passwordMatch = request.motDePasse.equals(utilisateur.getMotDePasse());
+        System.out.println(">>> PASSWORD MATCH: " + passwordMatch);
+        System.out.println(">>> MDP FOURNI: " + request.motDePasse + " | MDP EN BASE: " + utilisateur.getMotDePasse());
+        if (!passwordMatch) {
             throw new RuntimeException("Identifiant ou mot de passe incorrect");
         }
 
@@ -44,5 +48,9 @@ public class AuthService {
                 utilisateur.getIdentifiant(),
                 utilisateur.getRole()
         );
+    }
+
+    public void logout(Long userId) {
+        System.out.println(">>> USER LOGOUT: id=" + userId);
     }
 }

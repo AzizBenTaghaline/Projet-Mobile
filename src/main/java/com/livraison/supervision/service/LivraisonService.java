@@ -22,7 +22,8 @@ public class LivraisonService {
     // ---------- Contrôleur ----------
 
     public List<LivraisonDTO> getLivraisonsJour(LocalDate date) {
-        return livraisonRepository.findByDateLivraison(date)
+        LocalDate dateEnd = date.plusDays(1);
+        return livraisonRepository.findByDateLivraison(date, dateEnd)
                 .stream().map(mapper::toDTO).collect(Collectors.toList());
     }
 
@@ -48,30 +49,42 @@ public class LivraisonService {
     public DashboardDTO getDashboard(LocalDate date) {
         DashboardDTO dash = new DashboardDTO();
         dash.date = date;
+        LocalDate dateEnd = date.plusDays(1);
 
-        List<Object[]> statsStatut = livraisonRepository.countByStatutForDate(date);
+        // Stats globales par statut
+        List<Object[]> statsStatut = livraisonRepository.countByStatutForDate(date, dateEnd);
+        System.out.println(">>> Stats statut rows: " + statsStatut.size());
+
         for (Object[] row : statsStatut) {
-            Statut s = Statut.valueOf((String) row[0]);
+            // Oracle renvoie le statut comme String, pas comme enum
+            String statutStr = String.valueOf(row[0]);
             int count = ((Number) row[1]).intValue();
-            switch (s) {
-                case LIVREE   -> dash.livrees   = count;
-                case EN_COURS -> dash.enCours   = count;
-                case ECHOUEE  -> dash.echouees  = count;
-                case EN_ATTENTE -> dash.enAttente = count;
+            System.out.println(">>> Statut: " + statutStr + " = " + count);
+
+            switch (statutStr) {
+                case "LIVREE":    dash.livrees   = count; break;
+                case "EN_COURS":  dash.enCours   = count; break;
+                case "ECHOUEE":   dash.echouees  = count; break;
+                case "EN_ATTENTE": dash.enAttente = count; break;
+                default:
+                    System.out.println(">>> Statut inconnu: " + statutStr);
             }
         }
         dash.totalLivraisons = dash.livrees + dash.enCours + dash.echouees + dash.enAttente;
 
         // Stats par livreur
-        List<Object[]> rawStats = livraisonRepository.statsParLivreur(date);
+        List<Object[]> rawStats = livraisonRepository.statsParLivreur(date, dateEnd);
+        System.out.println(">>> Stats livreur rows: " + rawStats.size());
+
         Map<String, StatLivreurDTO> map = new LinkedHashMap<>();
 
         for (Object[] row : rawStats) {
-            String nom    = (String) row[0];
-            String prenom = (String) row[1];
-            Statut s      = Statut.valueOf((String) row[2]);
-            int count     = ((Number) row[3]).intValue();
-            String key    = nom + " " + prenom;
+            String nom    = String.valueOf(row[0]);
+            String prenom = String.valueOf(row[1]);
+            // row[2] = statut (String depuis Oracle)
+            String statutStr = String.valueOf(row[2]);
+            int count = ((Number) row[3]).intValue();
+            String key = nom + " " + prenom;
 
             StatLivreurDTO stat = map.computeIfAbsent(key, k -> {
                 StatLivreurDTO st = new StatLivreurDTO();
@@ -80,11 +93,11 @@ public class LivraisonService {
             });
 
             stat.total += count;
-            switch (s) {
-                case LIVREE   -> stat.livrees   += count;
-                case EN_COURS -> stat.enCours   += count;
-                case ECHOUEE  -> stat.echouees  += count;
-                case EN_ATTENTE -> stat.enAttente += count;
+            switch (statutStr) {
+                case "LIVREE":    stat.livrees   += count; break;
+                case "EN_COURS":  stat.enCours   += count; break;
+                case "ECHOUEE":   stat.echouees  += count; break;
+                case "EN_ATTENTE": stat.enAttente += count; break;
             }
         }
 
@@ -98,9 +111,9 @@ public class LivraisonService {
         TourneeDTO tournee = new TourneeDTO();
         tournee.livreurId = livreurId;
         tournee.date = date;
-        // Triées par zone (simulation de "plus proches en premier")
+        LocalDate dateEnd = date.plusDays(1);
         List<LivraisonDTO> livraisons = livraisonRepository
-                .findByLivreurIdAndDateLivraison(livreurId, date)
+                .findByLivreurIdAndDateLivraison(livreurId, date, dateEnd)
                 .stream()
                 .sorted(Comparator.comparing(l -> l.getZone() != null ? l.getZone() : ""))
                 .map(mapper::toDTO)
@@ -117,8 +130,6 @@ public class LivraisonService {
         if (req.remarque != null) l.setRemarque(req.remarque);
         return mapper.toDTO(livraisonRepository.save(l));
     }
-
-    // ---------- Sync fin de journée (livreur) ----------
 
     @Transactional
     public void syncLivraisons(SyncPayload payload) {

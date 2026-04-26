@@ -14,10 +14,12 @@ import java.util.Optional;
 public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
 
     // Toutes les livraisons d'une date donnée
-    List<Livraison> findByDateLivraison(LocalDate date);
+    @Query("SELECT l FROM Livraison l WHERE l.dateLivraison >= :dateStart AND l.dateLivraison < :dateEnd")
+    List<Livraison> findByDateLivraison(@Param("dateStart") LocalDate dateStart, @Param("dateEnd") LocalDate dateEnd);
 
     // Livraisons du jour pour un livreur
-    List<Livraison> findByLivreurIdAndDateLivraison(Long livreurId, LocalDate date);
+    @Query("SELECT l FROM Livraison l WHERE l.livreur.id = :livreurId AND l.dateLivraison >= :dateStart AND l.dateLivraison < :dateEnd")
+    List<Livraison> findByLivreurIdAndDateLivraison(@Param("livreurId") Long livreurId, @Param("dateStart") LocalDate dateStart, @Param("dateEnd") LocalDate dateEnd);
 
     // Par statut
     List<Livraison> findByStatut(Statut statut);
@@ -42,19 +44,20 @@ public interface LivraisonRepository extends JpaRepository<Livraison, Long> {
             @Param("numeroCommande") String numeroCommande);
 
     // Statistiques dashboard : compter par statut pour une date
-    @Query("SELECT l.statut, COUNT(l) FROM Livraison l WHERE l.dateLivraison = :date GROUP BY l.statut")
-    List<Object[]> countByStatutForDate(@Param("date") LocalDate date);
+    @Query("SELECT l.statut, COUNT(l) FROM Livraison l WHERE l.dateLivraison >= :dateStart AND l.dateLivraison < :dateEnd GROUP BY l.statut")
+    List<Object[]> countByStatutForDate(@Param("dateStart") LocalDate dateStart, @Param("dateEnd") LocalDate dateEnd);
 
     // Stats par livreur pour une date
     @Query("SELECT u.nom, u.prenom, l.statut, COUNT(l) FROM Livraison l " +
-           "JOIN l.livreur u WHERE l.dateLivraison = :date GROUP BY u.id, u.nom, u.prenom, l.statut")
-    List<Object[]> statsParLivreur(@Param("date") LocalDate date);
+           "JOIN l.livreur u WHERE l.dateLivraison >= :dateStart AND l.dateLivraison < :dateEnd GROUP BY u.id, u.nom, u.prenom, l.statut")
+    List<Object[]> statsParLivreur(@Param("dateStart") LocalDate dateStart, @Param("dateEnd") LocalDate dateEnd);
 
     // Livraisons non-synchronisées d'un livreur (LIVREE ou ECHOUEE)
     @Query("SELECT l FROM Livraison l WHERE l.livreur.id = :livreurId " +
-           "AND l.statut IN ('LIVREE', 'ECHOUEE') AND l.dateLivraison = :date")
+           "AND l.statut IN ('LIVREE', 'ECHOUEE') AND l.dateLivraison >= :dateStart AND l.dateLivraison < :dateEnd")
     List<Livraison> findLivraisonsASync(@Param("livreurId") Long livreurId,
-                                        @Param("date") LocalDate date);
+                                        @Param("dateStart") LocalDate dateStart,
+                                        @Param("dateEnd") LocalDate dateEnd);
 
     Optional<Livraison> findByNumeroCommande(String numeroCommande);
 }

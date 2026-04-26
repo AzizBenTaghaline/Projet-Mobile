@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 // ====================== AUTH ======================
 
@@ -27,6 +28,12 @@ class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest req) {
         return ResponseEntity.ok(authService.login(req));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@AuthenticationPrincipal Utilisateur utilisateur) {
+        authService.logout(utilisateur.getId());
+        return ResponseEntity.ok(Map.of("message", "Déconnexion réussie"));
     }
 }
 
