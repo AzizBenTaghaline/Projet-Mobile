@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="blue_primary">#185FA5</color>
+    <color name="blue_dark">#0C447C</color>
+    <color name="blue_light">#E6F1FB</color>
+    <color name="green_primary">#0F6E56</color>
+    <color name="green_dark">#085041</color>
+    <color name="green_light">#E1F5EE</color>
+    <color name="badge_livree_bg">#EAF3DE</color>
+    <color name="badge_livree_text">#3B6D11</color>
+    <color name="badge_encours_bg">#FAEEDA</color>
+    <color name="badge_encours_text">#854F0B</color>
+    <color name="badge_echouee_bg">#FCEBEB</color>
+    <color name="badge_echouee_text">#A32D2D</color>
+    <color name="badge_attente_bg">#F1EFE8</color>
+    <color name="badge_attente_text">#5F5E5A</color>
+    <color name="background">#F5F5F2</color>
+    <color name="white">#FFFFFF</color>
+    <color name="text_primary">#1A1A18</color>
+    <color name="text_secondary">#777777</color>
+    <color name="urgence_bg">#FCEBEB</color>
+    <color name="urgence_text">#A32D2D</color>
+</resources>
