@@ -55,14 +55,17 @@ public class MessagesLivreurFragment extends Fragment {
     }
 
     private void loadMessages() {
-        RetrofitClient.getInstance().getApi().getMessagesRecus()
+        // Charger la conversation complète avec le contrôleur (ID 9)
+        RetrofitClient.getInstance().getApi().getConversation(9L)
                 .enqueue(new Callback<List<MessageDTO>>() {
                     @Override
                     public void onResponse(Call<List<MessageDTO>> call,
                                            Response<List<MessageDTO>> response) {
                         if (response.isSuccessful() && response.body() != null) {
                             adapter.setData(response.body());
-                            rvMessages.scrollToPosition(adapter.getItemCount() - 1);
+                            if (adapter.getItemCount() > 0) {
+                                rvMessages.scrollToPosition(adapter.getItemCount() - 1);
+                            }
                         }
                     }
                     @Override public void onFailure(Call<List<MessageDTO>> call, Throwable t) {}

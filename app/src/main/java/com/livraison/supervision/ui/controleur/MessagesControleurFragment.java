@@ -52,35 +52,51 @@ public class MessagesControleurFragment extends Fragment {
         rvMessages.setAdapter(adapter);
 
         btnEnvoyer.setOnClickListener(v -> envoyerMessage());
+
+        // Bouton pour revenir à la liste des urgents
+        layoutUrgents.setOnLongClickListener(v -> {
+            selectedLivreurId = null;
+            adapter.setData(new ArrayList<>());
+            loadMessages();
+            return true;
+        });
+
         loadMessages();
         startPolling();
     }
 
     private void loadMessages() {
-        RetrofitClient.getInstance().getApi().getMessagesRecus()
-                .enqueue(new Callback<List<MessageDTO>>() {
-                    @Override
-                    public void onResponse(Call<List<MessageDTO>> call,
-                                           Response<List<MessageDTO>> response) {
-                        if (response.isSuccessful() && response.body() != null) {
-                            adapter.setData(response.body());
-                            rvMessages.scrollToPosition(adapter.getItemCount() - 1);
+        // Si un livreur est sélectionné, afficher la conversation avec lui
+        // Sinon afficher les messages d'urgence
+        if (selectedLivreurId != null) {
+            RetrofitClient.getInstance().getApi().getConversation(selectedLivreurId)
+                    .enqueue(new Callback<List<MessageDTO>>() {
+                        @Override
+                        public void onResponse(Call<List<MessageDTO>> call,
+                                               Response<List<MessageDTO>> response) {
+                            if (response.isSuccessful() && response.body() != null) {
+                                adapter.setData(response.body());
+                                if (adapter.getItemCount() > 0) {
+                                    rvMessages.scrollToPosition(adapter.getItemCount() - 1);
+                                }
+                            }
                         }
-                    }
-                    @Override public void onFailure(Call<List<MessageDTO>> call, Throwable t) {}
-                });
-
-        RetrofitClient.getInstance().getApi().getUrgents()
-                .enqueue(new Callback<List<MessageDTO>>() {
-                    @Override
-                    public void onResponse(Call<List<MessageDTO>> call,
-                                           Response<List<MessageDTO>> response) {
-                        if (response.isSuccessful() && response.body() != null) {
-                            showUrgents(response.body());
+                        @Override public void onFailure(Call<List<MessageDTO>> call, Throwable t) {}
+                    });
+        } else {
+            // Charger les messages urgents pour sélectionner un livreur
+            RetrofitClient.getInstance().getApi().getUrgents()
+                    .enqueue(new Callback<List<MessageDTO>>() {
+                        @Override
+                        public void onResponse(Call<List<MessageDTO>> call,
+                                               Response<List<MessageDTO>> response) {
+                            if (response.isSuccessful() && response.body() != null) {
+                                showUrgents(response.body());
+                            }
                         }
-                    }
-                    @Override public void onFailure(Call<List<MessageDTO>> call, Throwable t) {}
-                });
+                        @Override public void onFailure(Call<List<MessageDTO>> call, Throwable t) {}
+                    });
+        }
     }
 
     private void showUrgents(List<MessageDTO> urgents) {
@@ -97,7 +113,10 @@ public class MessagesControleurFragment extends Fragment {
             tv.setTextSize(12f);
             if (m.expediteur != null) {
                 Long livreurId = m.expediteur.id;
-                tv.setOnClickListener(v -> selectedLivreurId = livreurId);
+                tv.setOnClickListener(v -> {
+                    selectedLivreurId = livreurId;
+                    loadMessages(); // Charger la conversation avec ce livreur
+                });
             }
             layoutUrgents.addView(tv);
         }
